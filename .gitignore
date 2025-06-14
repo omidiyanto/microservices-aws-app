@@ -1,0 +1,29 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+backend/bin/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Mac
+.DS_Store
+
+# Local environment files
+.env
+.env.local 
