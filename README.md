@@ -10,7 +10,7 @@
 
 A zero-cost DevOps showcase demonstrating Infrastructure as Code (IaC) principles using AWS microservices on LocalStack.
 
-![MiNo Screenshot](https://via.placeholder.com/800x450.png?text=MiNo+App+Screenshot)
+![Image](https://github.com/user-attachments/assets/ddbb540c-cd79-49c2-8c50-15143e44b917)
 
 ## 🎯 Project Goals
 
