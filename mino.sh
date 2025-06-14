@@ -253,6 +253,64 @@ run_all() {
     log "You can now access the application at: http://192.168.0.250:4566/mino-frontend/index.html"
 }
 
+# Check dependencies and LocalStack
+check_dependencies() {
+    log "Checking required dependencies..."
+    
+    # Check AWS CLI
+    if ! command -v aws &> /dev/null; then
+        error "AWS CLI is not installed. Please install it first."
+        return 1
+    else
+        success "AWS CLI is installed: $(aws --version)"
+    fi
+    
+    # Check Go
+    if ! command -v go &> /dev/null; then
+        error "Go is not installed. Please install it first."
+        return 1
+    else
+        success "Go is installed: $(go version)"
+    fi
+    
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        error "Docker is not installed. Please install it first."
+        return 1
+    else
+        success "Docker is installed: $(docker --version)"
+    fi
+    
+    # Check Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
+        error "Docker Compose is not installed. Please install it first."
+        return 1
+    else
+        success "Docker Compose is installed: $(docker-compose --version)"
+    fi
+    
+    # Check Terraform
+    if ! command -v terraform &> /dev/null; then
+        error "Terraform is not installed. Please install it first."
+        return 1
+    else
+        success "Terraform is installed: $(terraform --version | head -n 1)"
+    fi
+    
+    # Check if LocalStack is running
+    log "Checking if LocalStack is running at 192.168.0.250:4566..."
+    if curl -s -m 5 http://192.168.0.250:4566/health &> /dev/null; then
+        success "LocalStack is running at 192.168.0.250:4566"
+    else
+        warning "LocalStack doesn't seem to be running at 192.168.0.250:4566"
+        echo -e "${YELLOW}Please make sure LocalStack is running with:${NC}"
+        echo "docker-compose up -d"
+    fi
+    
+    success "Dependency check completed."
+    return 0
+}
+
 # Show menu
 show_menu() {
     echo -e "${BLUE}=================================================${NC}"
@@ -260,6 +318,9 @@ show_menu() {
     echo -e "${BLUE}=================================================${NC}"
     echo ""
     echo "Please select an option:"
+    echo ""
+    echo "Environment:"
+    echo "  0) Check dependencies and LocalStack"
     echo ""
     echo "Initial Setup:"
     echo "  1) Configure AWS CLI for LocalStack"
@@ -282,9 +343,9 @@ show_menu() {
     echo "Full Process:"
     echo "  13) Run all steps (setup, init, deploy all)"
     echo ""
-    echo "  0) Exit"
+    echo "  x) Exit"
     echo ""
-    echo -n "Enter your choice [0-13]: "
+    echo -n "Enter your choice [0-13 or x]: "
 }
 
 # Main function
@@ -298,6 +359,7 @@ main() {
     fi
     
     case $option in
+        0) check_dependencies ;;
         1) setup_localstack ;;
         2) init_terraform ;;
         3) build_backend ;;
@@ -311,7 +373,7 @@ main() {
         11) clean_all ;;
         12) destroy_all ;;
         13) run_all ;;
-        0) echo "Exiting..."; exit 0 ;;
+        x|X|exit|q|Q) echo "Exiting..."; exit 0 ;;
         *) error "Invalid option"; return 1 ;;
     esac
     
