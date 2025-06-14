@@ -60,7 +60,7 @@ update_api_id() {
     
     # Check if LocalStack is running
     log "Checking if LocalStack is running at 192.168.0.250:4566..."
-    if ! curl -s http://192.168.0.250:4566/health | grep -q "running"; then
+    if ! curl -s -m 5 http://192.168.0.250:4566 &>/dev/null; then
         error "LocalStack doesn't seem to be running. Please start LocalStack first."
         return 1
     fi
