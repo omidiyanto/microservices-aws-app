@@ -51,7 +51,7 @@ module "apigateway" {
 
 # Output the frontend URL
 output "frontend_url" {
-  value = "http://192.168.0.250:4566/s3/${module.s3.bucket_name}/index.html"
+  value = "http://192.168.0.250:4566/${module.s3.bucket_name}/index.html"
 }
 
 # Output the API Gateway endpoint

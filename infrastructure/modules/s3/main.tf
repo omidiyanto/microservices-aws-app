@@ -1,60 +1,101 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
+resource "aws_s3_bucket" "frontend" {
+  bucket = "mino-frontend"
+}
+
+resource "aws_s3_bucket_website_configuration" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "error.html"
   }
 }
 
-provider "aws" {
-  access_key = "test"
-  secret_key = "test"
-  region     = "us-east-1"
+resource "aws_s3_bucket_public_access_block" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
 
-  # LocalStack configuration
-  endpoints {
-    apigateway     = "http://192.168.0.250:4566"
-    dynamodb       = "http://192.168.0.250:4566"
-    lambda         = "http://192.168.0.250:4566"
-    s3             = "http://192.168.0.250:4566"
-    iam            = "http://192.168.0.250:4566"
-    cloudwatchlogs = "http://192.168.0.250:4566"
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_ownership_controls" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+  
+  rule {
+    object_ownership = "BucketOwnerPreferred"
   }
-
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
-
-  # S3 specific configurations for LocalStack
-  s3_use_path_style = true
 }
 
-module "s3" {
-  source = "./modules/s3"
+resource "aws_s3_bucket_acl" "frontend" {
+  depends_on = [
+    aws_s3_bucket_public_access_block.frontend,
+    aws_s3_bucket_ownership_controls.frontend,
+  ]
+
+  bucket = aws_s3_bucket.frontend.id
+  acl    = "public-read"
 }
 
-module "dynamodb" {
-  source = "./modules/dynamodb"
+resource "aws_s3_bucket_policy" "frontend" {
+  depends_on = [aws_s3_bucket_public_access_block.frontend]
+  bucket = aws_s3_bucket.frontend.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.frontend.arn}/*"
+      }
+    ]
+  })
 }
 
-module "lambda" {
-  source = "./modules/lambda"
-  depends_on = [module.dynamodb]
+# Upload frontend files
+resource "aws_s3_object" "index" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "index.html"
+  source = "${path.module}/../../../frontend/index.html"
+  content_type = "text/html"
+  acl    = "public-read"
+
+  depends_on = [aws_s3_bucket_acl.frontend]
 }
 
-module "apigateway" {
-  source = "./modules/apigateway"
-  lambda_invoke_arns = module.lambda.lambda_invoke_arns
-  lambda_function_names = module.lambda.lambda_function_names
+resource "aws_s3_object" "js" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "app.js"
+  source = "${path.module}/../../../frontend/app.js"
+  content_type = "application/javascript"
+  acl    = "public-read"
+
+  depends_on = [aws_s3_bucket_acl.frontend]
 }
 
-# Output the frontend URL
-output "frontend_url" {
-  value = "http://192.168.0.250:4566/${module.s3.bucket_name}/index.html"
+resource "aws_s3_object" "css" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "styles.css"
+  source = "${path.module}/../../../frontend/styles.css"
+  content_type = "text/css"
+  acl    = "public-read"
+
+  depends_on = [aws_s3_bucket_acl.frontend]
 }
 
-# Output the API Gateway endpoint
-output "api_endpoint" {
-  value = module.apigateway.api_endpoint
-}
+resource "aws_s3_object" "error" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "error.html"
+  source = "${path.module}/../../../frontend/error.html"
+  content_type = "text/html"
+  acl    = "public-read"
+
+  depends_on = [aws_s3_bucket_acl.frontend]
+} 
