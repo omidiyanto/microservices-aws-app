@@ -76,9 +76,9 @@ update_api_id() {
     
     success "Found API ID: $API_ID"
     
-    # Update app.js
+    # Update app.js - only update the API_ID variable while preserving the API_URL format
     log "Updating frontend/app.js with the API ID..."
-    sed -i "s|{API_ID}|$API_ID|g" frontend/app.js
+    sed -i "s|^const API_ID = '.*';|const API_ID = '$API_ID';|" frontend/app.js
     
     success "Updated frontend/app.js with API ID: $API_ID"
 }

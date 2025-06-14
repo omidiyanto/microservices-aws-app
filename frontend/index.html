@@ -21,6 +21,49 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="styles.css">
+    <!-- SweetAlert2 with dark theme -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* SweetAlert2 Dark Theme Customization */
+        .swal2-popup {
+            background-color: #1f2937 !important; /* Dark background */
+            color: #e5e7eb !important; /* Light text */
+            border: 1px solid #374151 !important; /* Border color */
+        }
+        .swal2-title, .swal2-html-container {
+            color: #e5e7eb !important; /* Light text */
+        }
+        .swal2-input, .swal2-textarea {
+            background-color: #374151 !important;
+            color: #e5e7eb !important;
+            border: 1px solid #4b5563 !important;
+        }
+        /* Fix for input fields with custom IDs */
+        #swal-note-title, #swal-note-content {
+            background-color: #374151 !important;
+            color: #e5e7eb !important;
+            border: 1px solid #4b5563 !important;
+        }
+        .swal2-input:focus, .swal2-textarea:focus {
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.5) !important;
+        }
+        .swal2-confirm {
+            background-color: #4b5563 !important;
+        }
+        .swal2-confirm:hover {
+            background-color: #6b7280 !important;
+        }
+        .swal2-cancel {
+            background-color: #6b7280 !important;
+        }
+        .swal2-cancel:hover {
+            background-color: #9ca3af !important;
+        }
+        /* Fix label colors */
+        .swal2-popup label {
+            color: #e5e7eb !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
     <!-- Header -->
@@ -131,7 +174,7 @@
     <!-- Footer -->
     <footer class="bg-gray-800 border-t border-gray-700 py-4">
         <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
-            &copy; 2023 MiNo - Your Simple Note Taking App
+            &copy; 2025 MiNo - Your Simple Note Taking App by O. Midiyanto
         </div>
     </footer>
 

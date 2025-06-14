@@ -1,7 +1,8 @@
 // MiNo App JavaScript
 
 // Configuration
-const API_URL = 'http://192.168.0.250:4566/restapis/t2anm7rypo/dev/_user_request_/'; // LocalStack API URL format
+const API_ID = 'tunulj4rcl';
+const API_URL = 'http://192.168.0.250:4566/restapis/'+API_ID+'/dev/_user_request_/'; // LocalStack API URL format
 let currentUser = null;
 let userToken = null;
 let notes = [];
@@ -328,22 +329,70 @@ function showNoteEditor(noteId = null) {
         const note = notes.find(n => n.noteId === noteId);
         if (!note) return;
         
-        noteTitle.value = note.title;
-        noteContent.value = note.content;
-        noteIdField.value = note.noteId;
-        editorTitle.textContent = 'Edit Note';
+        // Use SweetAlert2 for editing
+        Swal.fire({
+            title: 'Edit Note',
+            html:
+                '<div class="mb-4">' +
+                '<label for="swal-note-title" class="block text-left mb-1">Title</label>' +
+                `<input id="swal-note-title" class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600" value="${escapeHtml(note.title)}" required>` +
+                '</div>' +
+                '<div class="mb-4">' +
+                '<label for="swal-note-content" class="block text-left mb-1">Content</label>' +
+                `<textarea id="swal-note-content" rows="8" class="w-full px-4 py-2 rounded-lg resize-none bg-gray-700 text-white border border-gray-600">${escapeHtml(note.content)}</textarea>` +
+                '</div>',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            preConfirm: () => {
+                const title = document.getElementById('swal-note-title').value;
+                const content = document.getElementById('swal-note-content').value;
+                if (!title) {
+                    Swal.showValidationMessage('Title is required');
+                    return false;
+                }
+                return { title, content };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const { title, content } = result.value;
+                saveNote(title, content, noteId);
+            }
+        });
     } else {
-        // Create new note
-        console.log('Creating new note - resetting form');
-        noteForm.reset();
-        noteIdField.value = '';
-        editorTitle.textContent = 'Create Note';
+        // Create new note with SweetAlert2
+        Swal.fire({
+            title: 'Create New Note',
+            html:
+                '<div class="mb-4">' +
+                '<label for="swal-note-title" class="block text-left mb-1">Title</label>' +
+                '<input id="swal-note-title" class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600" required>' +
+                '</div>' +
+                '<div class="mb-4">' +
+                '<label for="swal-note-content" class="block text-left mb-1">Content</label>' +
+                '<textarea id="swal-note-content" rows="8" class="w-full px-4 py-2 rounded-lg resize-none bg-gray-700 text-white border border-gray-600"></textarea>' +
+                '</div>',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Create',
+            cancelButtonText: 'Cancel',
+            preConfirm: () => {
+                const title = document.getElementById('swal-note-title').value;
+                const content = document.getElementById('swal-note-content').value;
+                if (!title) {
+                    Swal.showValidationMessage('Title is required');
+                    return false;
+                }
+                return { title, content };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const { title, content } = result.value;
+                saveNote(title, content);
+            }
+        });
     }
-    
-    console.log('Showing note editor');
-    console.log('noteEditor element:', noteEditor);
-    noteEditor.classList.remove('hidden');
-    console.log('Note editor classes after removing hidden:', noteEditor.className);
 }
 
 // Hide note editor
@@ -360,7 +409,19 @@ function editNote(noteId) {
 
 // Delete note
 async function deleteNote(noteId) {
-    if (!confirm('Are you sure you want to delete this note?')) {
+    // Use SweetAlert2 for confirmation
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        background: '#1f2937',
+        color: '#e5e7eb',
+        iconColor: '#f59e0b'
+    });
+    
+    if (!result.isConfirmed) {
         return;
     }
     
@@ -368,6 +429,17 @@ async function deleteNote(noteId) {
         console.log('Deleting note with ID:', noteId);
         const url = `${API_URL}notes/${noteId}`;
         console.log('Delete URL:', url);
+        
+        // Show loading indicator
+        Swal.fire({
+            title: 'Deleting note...',
+            allowOutsideClick: false,
+            background: '#1f2937',
+            color: '#e5e7eb',
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         const response = await fetch(url, {
             method: 'DELETE',
@@ -382,24 +454,43 @@ async function deleteNote(noteId) {
         if (response.ok && data.success) {
             // Refresh notes from server instead of manually filtering
             await fetchNotes();
-            showToast('Note deleted successfully');
+            
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: 'Your note has been deleted.',
+                showConfirmButton: false,
+                timer: 1500,
+                background: '#1f2937',
+                color: '#e5e7eb',
+                iconColor: '#10b981'
+            });
         } else {
-            showToast(data.message || 'Failed to delete note');
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: data.message || 'Failed to delete note',
+                background: '#1f2937',
+                color: '#e5e7eb',
+                iconColor: '#ef4444'
+            });
         }
     } catch (error) {
         console.error('Delete note error:', error);
-        showToast('Failed to delete note');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Failed to delete note. Please try again.',
+            background: '#1f2937',
+            color: '#e5e7eb',
+            iconColor: '#ef4444'
+        });
     }
 }
 
-// Handle save note
-async function handleSaveNote(e) {
-    e.preventDefault();
-    
-    const title = noteTitle.value;
-    const content = noteContent.value;
-    const noteId = noteIdField.value;
-    
+// Save note function for SweetAlert2
+async function saveNote(title, content, noteId = null) {
     const isNewNote = !noteId;
     
     try {
@@ -417,6 +508,17 @@ async function handleSaveNote(e) {
         console.log('Method:', method);
         console.log('Token:', userToken);
         console.log('Data:', { title, content });
+        
+        // Show loading indicator
+        Swal.fire({
+            title: isNewNote ? 'Creating note...' : 'Updating note...',
+            allowOutsideClick: false,
+            background: '#1f2937',
+            color: '#e5e7eb',
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         
         const response = await fetch(url, {
             method,
@@ -442,15 +544,50 @@ async function handleSaveNote(e) {
         if (response.ok && data.success) {
             // Refresh notes from server instead of manually updating the array
             await fetchNotes();
-            hideNoteEditor();
-            showToast(isNewNote ? 'Note created successfully' : 'Note updated successfully');
+            
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: isNewNote ? 'Note created successfully!' : 'Note updated successfully!',
+                showConfirmButton: false,
+                timer: 1500,
+                background: '#1f2937',
+                color: '#e5e7eb',
+                iconColor: '#10b981'
+            });
         } else {
-            showToast(data.message || 'Failed to save note');
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: data.message || 'Failed to save note',
+                background: '#1f2937',
+                color: '#e5e7eb',
+                iconColor: '#ef4444'
+            });
         }
     } catch (error) {
         console.error('Save note error:', error);
-        showToast('Failed to save note');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Failed to save note. Please try again.',
+            background: '#1f2937',
+            color: '#e5e7eb',
+            iconColor: '#ef4444'
+        });
     }
+}
+
+// Handle save note (for the original form - keeping for compatibility)
+async function handleSaveNote(e) {
+    e.preventDefault();
+    
+    const title = noteTitle.value;
+    const content = noteContent.value;
+    const noteId = noteIdField.value;
+    
+    await saveNote(title, content, noteId);
+    hideNoteEditor();
 }
 
 // Show toast notification
