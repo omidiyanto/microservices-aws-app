@@ -250,7 +250,7 @@ run_all() {
     deploy_frontend || { error "Frontend deployment failed!"; return 1; }
     
     success "All operations completed successfully!"
-    log "You can now access the application at: http://192.168.0.250:4566/s3/mino-frontend/index.html"
+    log "You can now access the application at: http://192.168.0.250:4566/mino-frontend/index.html"
 }
 
 # Show menu
