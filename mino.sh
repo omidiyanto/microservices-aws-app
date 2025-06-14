@@ -89,6 +89,29 @@ build_backend() {
     
     cd backend || { error "Backend directory not found!"; return 1; }
     
+    # Initialize Go modules if go.mod doesn't exist
+    if [ ! -f "go.mod" ]; then
+        log "Initializing Go modules..."
+        go mod init github.com/omidiyanto/mino
+    fi
+    
+    # Download required dependencies
+    log "Downloading required Go modules..."
+    go get github.com/aws/aws-lambda-go/events
+    go get github.com/aws/aws-lambda-go/lambda
+    go get github.com/golang-jwt/jwt
+    go get golang.org/x/crypto/bcrypt
+    go get github.com/aws/aws-sdk-go-v2/aws
+    go get github.com/aws/aws-sdk-go-v2/config
+    go get github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue
+    go get github.com/aws/aws-sdk-go-v2/service/dynamodb
+    go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
+    go get github.com/google/uuid
+    
+    # Tidy up modules
+    log "Tidying up Go modules..."
+    go mod tidy
+    
     log "Building Lambda functions..."
     mkdir -p bin
     

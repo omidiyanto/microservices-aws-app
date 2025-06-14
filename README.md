@@ -225,6 +225,35 @@ Or use the deploy all option which handles the correct order:
 ./mino.sh 8   # Deploy all components
 ```
 
+### Go Module Dependencies
+
+If you see errors like:
+```
+missing go.sum entry for module providing package github.com/aws/aws-lambda-go/events
+```
+
+This is related to Go module dependencies. The updated script now automatically handles this by:
+1. Initializing Go modules if needed
+2. Downloading all required dependencies
+3. Running `go mod tidy` to clean up the module files
+
+If you still encounter issues, you can manually run:
+```bash
+cd backend
+go mod init github.com/omidiyanto/mino
+go get github.com/aws/aws-lambda-go/events
+go get github.com/aws/aws-lambda-go/lambda
+go get github.com/golang-jwt/jwt
+go get golang.org/x/crypto/bcrypt
+go get github.com/aws/aws-sdk-go-v2/aws
+go get github.com/aws/aws-sdk-go-v2/config
+go get github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue
+go get github.com/aws/aws-sdk-go-v2/service/dynamodb
+go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
+go get github.com/google/uuid
+go mod tidy
+```
+
 ### API Gateway Integration Errors
 
 If you see:
