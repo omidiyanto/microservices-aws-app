@@ -1,7 +1,7 @@
 // MiNo App JavaScript
 
 // Configuration
-const API_URL = 'http://192.168.0.250:4566/restapis/{API_ID}/dev/_user_request_/'; // Replace {API_ID} with actual API ID after deployment
+const API_URL = 'http://192.168.0.250:4566/restapis/t2anm7rypo/dev/_user_request_/'; // LocalStack API URL format
 let currentUser = null;
 let userToken = null;
 let notes = [];
@@ -29,6 +29,14 @@ const editorTitle = document.getElementById('editor-title');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 
+// Log DOM elements to check if they're properly loaded
+console.log('DOM Elements:');
+console.log('authContainer:', authContainer);
+console.log('notesContainer:', notesContainer);
+console.log('noteEditor:', noteEditor);
+console.log('newNoteBtn:', newNoteBtn);
+console.log('noteForm:', noteForm);
+
 // Initialize App
 function initApp() {
     // Check for stored token
@@ -48,6 +56,8 @@ function initApp() {
 
 // Setup Event Listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners');
+    
     // Auth tabs
     loginTab.addEventListener('click', () => switchAuthTab('login'));
     registerTab.addEventListener('click', () => switchAuthTab('register'));
@@ -56,11 +66,21 @@ function setupEventListeners() {
     loginForm.addEventListener('submit', handleLogin);
     registerForm.addEventListener('submit', handleRegister);
     noteForm.addEventListener('submit', handleSaveNote);
+    console.log('Note form submit listener added');
     
     // Note buttons
-    newNoteBtn.addEventListener('click', showNoteEditor);
+    console.log('New note button:', newNoteBtn);
+    newNoteBtn.addEventListener('click', function() {
+        console.log('New note button clicked');
+        showNoteEditor();
+    });
+    
     document.querySelectorAll('.new-note-btn').forEach(btn => {
-        btn.addEventListener('click', showNoteEditor);
+        console.log('Found .new-note-btn element:', btn);
+        btn.addEventListener('click', function() {
+            console.log('New note button (class) clicked');
+            showNoteEditor();
+        });
     });
     
     // Close buttons
@@ -95,11 +115,11 @@ function showAuthForms() {
 }
 
 // Show notes section
-function showNotesSection() {
+async function showNotesSection() {
     authContainer.classList.add('hidden');
     notesContainer.classList.remove('hidden');
     updateAuthActions(true);
-    fetchNotes();
+    await fetchNotes(); // Use await to ensure notes are loaded before continuing
 }
 
 // Update auth actions in header
@@ -150,7 +170,7 @@ async function handleLogin(e) {
             localStorage.setItem('token', userToken);
             
             showToast('Logged in successfully');
-            showNotesSection();
+            await showNotesSection(); // Use await since showNotesSection is now async
         } else {
             showToast(data.message || 'Login failed');
         }
@@ -223,7 +243,7 @@ async function fetchUserData() {
                 email: payload.email
             };
             
-            showNotesSection();
+            await showNotesSection(); // Use await since showNotesSection is now async
         } else {
             // Invalid token format
             handleLogout();
@@ -300,6 +320,7 @@ function renderNotes() {
 
 // Show note editor for creating new note
 function showNoteEditor(noteId = null) {
+    console.log('showNoteEditor called with noteId:', noteId);
     currentNoteId = noteId;
     
     if (noteId) {
@@ -313,12 +334,16 @@ function showNoteEditor(noteId = null) {
         editorTitle.textContent = 'Edit Note';
     } else {
         // Create new note
+        console.log('Creating new note - resetting form');
         noteForm.reset();
         noteIdField.value = '';
         editorTitle.textContent = 'Create Note';
     }
     
+    console.log('Showing note editor');
+    console.log('noteEditor element:', noteEditor);
     noteEditor.classList.remove('hidden');
+    console.log('Note editor classes after removing hidden:', noteEditor.className);
 }
 
 // Hide note editor
@@ -329,6 +354,7 @@ function hideNoteEditor() {
 
 // Edit note
 function editNote(noteId) {
+    console.log('Edit note called with noteId:', noteId);
     showNoteEditor(noteId);
 }
 
@@ -339,9 +365,14 @@ async function deleteNote(noteId) {
     }
     
     try {
-        const response = await fetch(`${API_URL}notes/${noteId}`, {
+        console.log('Deleting note with ID:', noteId);
+        const url = `${API_URL}notes/${noteId}`;
+        console.log('Delete URL:', url);
+        
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${userToken}`
             }
         });
@@ -349,8 +380,8 @@ async function deleteNote(noteId) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            notes = notes.filter(note => note.noteId !== noteId);
-            renderNotes();
+            // Refresh notes from server instead of manually filtering
+            await fetchNotes();
             showToast('Note deleted successfully');
         } else {
             showToast(data.message || 'Failed to delete note');
@@ -378,7 +409,14 @@ async function handleSaveNote(e) {
         if (!isNewNote) {
             url = `${API_URL}notes/${noteId}`;
             method = 'PUT';
+            console.log('Update note - using noteId:', noteId);
+            console.log('Update URL:', url);
         }
+        
+        console.log('Saving note to URL:', url);
+        console.log('Method:', method);
+        console.log('Token:', userToken);
+        console.log('Data:', { title, content });
         
         const response = await fetch(url, {
             method,
@@ -389,19 +427,21 @@ async function handleSaveNote(e) {
             body: JSON.stringify({ title, content })
         });
         
-        const data = await response.json();
+        console.log('Response status:', response.status);
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse response as JSON:', e);
+            throw new Error('Invalid response from server');
+        }
         
         if (response.ok && data.success) {
-            if (isNewNote) {
-                notes.push(data.data);
-            } else {
-                const index = notes.findIndex(note => note.noteId === noteId);
-                if (index !== -1) {
-                    notes[index] = data.data;
-                }
-            }
-            
-            renderNotes();
+            // Refresh notes from server instead of manually updating the array
+            await fetchNotes();
             hideNoteEditor();
             showToast(isNewNote ? 'Note created successfully' : 'Note updated successfully');
         } else {
